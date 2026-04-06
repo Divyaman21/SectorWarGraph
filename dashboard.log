@@ -1,0 +1,55 @@
+
+============================================================
+  Sector War Graph — Interactive Dashboard
+  http://127.0.0.1:8050
+============================================================
+
+2026-03-28 05:29:24 │ [32mINFO[0m │ sector_war_graph.viz.dashboard │ Generating default dashboard data
+/Users/anjalichaudhary/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+2026-03-28 05:29:24 │ [32mINFO[0m │ sector_war_graph.data.acled_pipeline │ Generating synthetic ACLED data for development
+2026-03-28 05:29:24 │ [32mINFO[0m │ sector_war_graph.data.bea_io │ ────────────────────────────────────────
+2026-03-28 05:29:24 │ [32mINFO[0m │ sector_war_graph.data.bea_io │ ▶ Building I-O dependency matrix
+2026-03-28 05:29:24 │ [32mINFO[0m │ sector_war_graph.data.bea_io │   Source: BEA Use Table approximation
+2026-03-28 05:29:24 │ [32mINFO[0m │ sector_war_graph.data.bea_io │ I-O matrix shape: (11, 11), density: 57.0%
+2026-03-28 05:29:24 │ [32mINFO[0m │ sector_war_graph.viz.dashboard │ Starting dashboard at http://127.0.0.1:8050
+Dash is running on http://127.0.0.1:8050/
+
+ * Serving Flask app 'viz.dashboard'
+ * Debug mode: on
+
+============================================================
+  Sector War Graph — Interactive Dashboard
+  http://127.0.0.1:8050
+============================================================
+
+2026-03-28 05:29:25 │ [32mINFO[0m │ sector_war_graph.viz.dashboard │ Generating default dashboard data
+/Users/anjalichaudhary/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+2026-03-28 05:29:25 │ [32mINFO[0m │ sector_war_graph.data.acled_pipeline │ Generating synthetic ACLED data for development
+2026-03-28 05:29:25 │ [32mINFO[0m │ sector_war_graph.data.bea_io │ ────────────────────────────────────────
+2026-03-28 05:29:25 │ [32mINFO[0m │ sector_war_graph.data.bea_io │ ▶ Building I-O dependency matrix
+2026-03-28 05:29:25 │ [32mINFO[0m │ sector_war_graph.data.bea_io │   Source: BEA Use Table approximation
+2026-03-28 05:29:25 │ [32mINFO[0m │ sector_war_graph.data.bea_io │ I-O matrix shape: (11, 11), density: 57.0%
+2026-03-28 05:29:25 │ [32mINFO[0m │ sector_war_graph.viz.dashboard │ Starting dashboard at http://127.0.0.1:8050
+
+============================================================
+  Sector War Graph — Interactive Dashboard
+  http://127.0.0.1:8050
+============================================================
+
+2026-03-28 05:55:28 │ [32mINFO[0m │ sector_war_graph.viz.dashboard │ Generating default dashboard data
+/Users/anjalichaudhary/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Traceback (most recent call last):
+  File "/Users/anjalichaudhary/Desktop/GRAPH PROJECT/sector_war_graph/run_dashboard.py", line 17, in <module>
+    run_dashboard()
+  File "/Users/anjalichaudhary/Desktop/GRAPH PROJECT/sector_war_graph/viz/dashboard.py", line 547, in run_dashboard
+    app = create_app(data_bundle)
+  File "/Users/anjalichaudhary/Desktop/GRAPH PROJECT/sector_war_graph/viz/dashboard.py", line 66, in create_app
+    data_bundle = _generate_default_data()
+  File "/Users/anjalichaudhary/Desktop/GRAPH PROJECT/sector_war_graph/viz/dashboard.py", line 517, in _generate_default_data
+    from data.acled_pipeline import _generate_synthetic_acled, _classify_events, _compute_severity
+  File "/Users/anjalichaudhary/Desktop/GRAPH PROJECT/sector_war_graph/viz/../data/acled_pipeline.py", line 16, in <module>
+    from config import ACLED_KEY, ACLED_EMAIL, MENA_COUNTRIES, START_DATE, END_DATE
+ImportError: cannot import name 'ACLED_KEY' from 'config' (/Users/anjalichaudhary/Desktop/GRAPH PROJECT/sector_war_graph/viz/../config.py)
