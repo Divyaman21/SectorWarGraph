@@ -10,7 +10,7 @@ ACLED_PASSWORD = 'Angira999@subhanu'
 
 # ── Date Range ────────────────────────────────────────────────────────────────
 START_DATE = '2023-10-01'
-END_DATE = '2026-03-28'
+END_DATE = '2026-04-14'
 
 # ── Feature Engineering ───────────────────────────────────────────────────────
 WINDOW_DAYS = 30
