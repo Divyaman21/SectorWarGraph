@@ -15,16 +15,6 @@ END_DATE = '2026-03-28'
 # ── Feature Engineering ───────────────────────────────────────────────────────
 WINDOW_DAYS = 30
 FORWARD_DAYS = 21  # ~1 month for prediction target
-
-# ── GNN Hyperparameters ───────────────────────────────────────────────────────
-GNN_HIDDEN = 128
-GNN_EPOCHS = 200
-GNN_LR = 1e-3
-GNN_WEIGHT_DECAY = 1e-4
-GNN_DROPOUT = 0.2
-GNN_HEADS = 4
-
-# ── Lasso Regression ─────────────────────────────────────────────────────────
 LASSO_ALPHA = 0.01
 
 # ── Regime Detection ─────────────────────────────────────────────────────────
@@ -77,10 +67,6 @@ BEA_TO_GICS = {
 
 # ── Oil Benchmark ────────────────────────────────────────────────────────────
 OIL_TICKER = 'CL=F'  # WTI Crude Oil Futures
-
-# ── Event Encoder ────────────────────────────────────────────────────────────
-EVENT_ENCODER_MODEL = 'ProsusAI/finbert'
-EVENT_EMB_DIM = 768
 
 # ── Data Cache Directory ─────────────────────────────────────────────────────
 CACHE_DIR = 'data/cache'

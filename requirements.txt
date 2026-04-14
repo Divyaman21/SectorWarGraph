@@ -1,10 +1,6 @@
 yfinance>=0.2.36
 pandas>=2.1.0
 numpy>=1.26.0
-torch>=2.2.0
-torch_geometric>=2.5.0
-transformers>=4.38.0
-sentence-transformers>=2.6.0
 scikit-learn>=1.4.0
 hmmlearn>=0.3.0
 networkx>=3.2.0

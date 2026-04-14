@@ -16,7 +16,7 @@ Panels:
   7. Rotation heatmap (11 x T z-score)
   8. Counterfactual panel (oil price slider)
   9. Regime indicator badge
-  10. Attention weight chart
+  10. Graph centrality & density analytics
 """
 
 import numpy as np
@@ -241,7 +241,29 @@ def create_app(data_bundle: dict = None):
                           'border': '1px solid #ECF0F1',
                           'borderRadius': '8px', 'padding': '10px'}),
 
-                # Counterfactual panel
+                # Graph Analytics
+                html.Div([
+                    html.H4('📈 Graph Analytics', style={'margin': '0 0 5px 0',
+                                                            'fontSize': '14px'}),
+                    html.Div([
+                        html.Div([
+                            html.P('Density', style={'margin': '0', 'fontSize': '11px', 'color': '#7F8C8D'}),
+                            html.H3(id='graph-density', children='0.00', style={'margin': '0', 'fontSize': '18px'})
+                        ], style={'flex': '1', 'textAlign': 'center'}),
+                        html.Div([
+                            html.P('Avg Deg', style={'margin': '0', 'fontSize': '11px', 'color': '#7F8C8D'}),
+                            html.H3(id='graph-degree', children='0.00', style={'margin': '0', 'fontSize': '18px'})
+                        ], style={'flex': '1', 'textAlign': 'center'}),
+                    ], style={'display': 'flex', 'marginBottom': '10px', 'backgroundColor': '#F8F9F9', 'padding': '5px', 'borderRadius': '4px'}),
+                    
+                    dcc.Graph(id='centrality-chart',
+                             style={'height': '200px'},
+                             config={'displayModeBar': False}),
+                ], style={'marginBottom': '12px',
+                          'border': '1px solid #ECF0F1',
+                          'borderRadius': '8px', 'padding': '10px'}),
+
+                # Counterfactual panel (keep this as it's sensitivity-based)
                 html.Div([
                     html.H4('🔮 What-If Scenario', style={'margin': '0 0 5px 0',
                                                             'fontSize': '14px'}),
@@ -488,6 +510,64 @@ def create_app(data_bundle: dict = None):
             ], style={'padding': '4px 0', 'borderBottom': '1px solid #ECF0F1'}))
 
         return items
+
+    @app.callback(
+        Output('centrality-chart', 'figure'),
+        Output('graph-density', 'children'),
+        Output('graph-degree', 'children'),
+        [Input('timeline-slider', 'value'),
+         Input('edge-mode', 'value')],
+    )
+    def update_graph_analytics(timeline_idx, edge_mode):
+        """Compute centrality and density for the current graph snapshot."""
+        if timeline_idx is None or timeline_idx >= len(months):
+            return go.Figure(), "0.00", "0.00"
+
+        # Get edge features for this month
+        edge_feat_idx = {'corr': 0, 'io': 1, 'oil': 2, 'supply': 3}.get(edge_mode, 0)
+        edge_feats = data_bundle.get('edge_features')
+        
+        if edge_feats is None:
+            return go.Figure(), "0.00", "0.00"
+            
+        adj_matrix = edge_feats[timeline_idx, :, :, edge_feat_idx]
+        
+        # Build NetworkX to use its algorithms
+        import networkx as nx
+        from viz.graph_renderer import build_networkx_graph
+        G = build_networkx_graph(adj_matrix, directed=True, edge_threshold=0.1)
+        
+        # Compute metrics
+        try:
+            centrality = nx.degree_centrality(G)
+            density = nx.density(G)
+            avg_deg = sum(dict(G.degree()).values()) / len(G) if len(G) > 0 else 0
+        except Exception:
+            centrality = {s: 0 for s in SECTORS}
+            density = 0
+            avg_deg = 0
+
+        # Create bar chart for centrality
+        sorted_centrality = sorted(centrality.items(), key=lambda x: x[1], reverse=True)
+        sectors_sorted = [x[0] for x in sorted_centrality]
+        values_sorted = [x[1] for x in sorted_centrality]
+        colors_sorted = [_get_color(s) for s in sectors_sorted]
+
+        fig = go.Figure(go.Bar(
+            x=sectors_sorted,
+            y=values_sorted,
+            marker_color=colors_sorted,
+        ))
+
+        fig.update_layout(
+            title='Sector Connectivity (Centrality)',
+            margin=dict(l=30, r=10, t=30, b=40),
+            height=180,
+            plot_bgcolor='white',
+            yaxis_title='Degree Centrality',
+        )
+
+        return fig, f"{density:.2f}", f"{avg_deg:.1f}"
 
     return app
 

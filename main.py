@@ -2,14 +2,12 @@ from __future__ import annotations
 """
 Main entry point for the Sector War Graph project.
 
-Orchestrates the full pipeline:
+Orchestrates the pipeline:
   1. Data ingestion (ACLED, GDELT, yfinance, BEA)
   2. Feature engineering (sensitivity matrix, node/edge features)
-  3. Event encoding (FinBERT embeddings)
-  4. Graph construction (PyG snapshots)
-  5. Model training (T-GNN)
-  6. Regime detection (HMM)
-  7. Dashboard launch (Dash)
+  3. Graph construction (NetworkX snapshots)
+  4. Regime detection (HMM)
+  5. Dashboard launch (Dash)
 """
 
 import sys
@@ -22,8 +20,7 @@ import pandas as pd
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, PROJECT_ROOT)
 
-from config import (SECTOR_ETFS, START_DATE, END_DATE, GNN_EPOCHS,
-                    WINDOW_DAYS, EVENT_EMB_DIM)
+from config import SECTOR_ETFS, START_DATE, END_DATE
 from utils.logger import get_logger, log_step
 from utils.data_store import DataStore
 
@@ -32,17 +29,13 @@ logger = get_logger('main')
 SECTORS = list(SECTOR_ETFS.keys())
 
 
-def run_pipeline(skip_training: bool = False,
-                 use_cache: bool = True,
-                 epochs: int = GNN_EPOCHS,
+def run_pipeline(use_cache: bool = True,
                  launch_dashboard: bool = True):
     """
-    Execute the full pipeline from data ingestion to dashboard.
-    
+    Execute the pipeline from data ingestion to dashboard.
+
     Args:
-        skip_training: Skip GNN training (use random predictions)
         use_cache: Use cached data when available
-        epochs: Number of GNN training epochs
         launch_dashboard: Whether to launch the Dash dashboard
     """
     logger.info('=' * 70)
@@ -126,76 +119,19 @@ def run_pipeline(skip_training: bool = False,
     edge_features = edge_features[:T]
     logger.info(f'Temporal alignment: T={T} months')
 
-    # 3c. Event encoding
-    from features.event_encoder import (EventEncoder, aggregate_monthly_impacts,
-                                         build_event_embedding_tensor)
-    encoder = EventEncoder()
-
-    # Combine events for encoding
-    combined_events = events_df.copy()
-    if 'title' not in combined_events.columns and 'notes' in combined_events.columns:
-        combined_events['title'] = combined_events['notes']
-    if 'fatalities' not in combined_events.columns:
-        combined_events['fatalities'] = 0
-    if 'tone_score' not in combined_events.columns:
-        combined_events['tone_score'] = 0.0
-
-    monthly_impacts = aggregate_monthly_impacts(combined_events, encoder, sensitivity_df)
-
     # Build month list aligned with feature tensor
     month_dates = sorted(set(corr_dict.keys()) & set(oil_dict.keys()))[:T]
     months = [str(d.to_period('M')) for d in month_dates]
-
-    event_emb_tensor = build_event_embedding_tensor(monthly_impacts, months)
-    import torch
-    event_embs = torch.tensor(event_emb_tensor[:T], dtype=torch.float32)
-    logger.info(f'Event embeddings: {event_embs.shape}')
 
     # ══════════════════════════════════════════════════════════════════════
     # STEP 4: Graph Construction
     # ══════════════════════════════════════════════════════════════════════
     log_step(logger, 'STEP 4: Building Graph Snapshots')
 
-    from model.temporal_gnn import build_pyg_snapshots, SectorWarGNN
-    snapshots = build_pyg_snapshots(node_features, edge_features, edge_index)
-    logger.info(f'Graph snapshots: {len(snapshots)} monthly snapshots')
-
-    # ══════════════════════════════════════════════════════════════════════
-    # STEP 5: Model Training
-    # ══════════════════════════════════════════════════════════════════════
-    log_step(logger, 'STEP 5: T-GNN Training')
-
-    model = SectorWarGNN()
-    param_count = sum(p.numel() for p in model.parameters())
-    logger.info(f'Model parameters: {param_count:,}')
-
-    # Build targets: next-month sector returns
-    if T > 1:
-        import torch
-        targets_data = monthly_returns.values[:T]
-        # Pad or trim to match
-        if len(targets_data) < T:
-            pad = np.zeros((T - len(targets_data), 11))
-            targets_data = np.vstack([targets_data, pad])
-        targets = torch.tensor(targets_data[:T], dtype=torch.float32)
-    else:
-        import torch
-        targets = torch.zeros(T, 11)
-
-    predictions = None
-    if not skip_training and T > 2:
-        from model.temporal_gnn import train_model, predict
-        losses = train_model(model, snapshots, event_embs, targets, epochs=epochs)
-        predictions = predict(model, snapshots, event_embs)
-        logger.info(f'Training loss: {losses[0]:.6f} → {losses[-1]:.6f}')
-    else:
-        logger.info('Skipping GNN training (use --train to enable)')
-        predictions = np.random.randn(T, 11) * 0.02
-
     # ══════════════════════════════════════════════════════════════════════
     # STEP 6: Regime Detection
     # ══════════════════════════════════════════════════════════════════════
-    log_step(logger, 'STEP 6: Regime Detection')
+    log_step(logger, 'STEP 5: Regime Detection')
 
     from model.regime_detector import RegimeDetector, build_regime_features
     try:
@@ -218,9 +154,9 @@ def run_pipeline(skip_training: bool = False,
         regime_labels = np.ones(T, dtype=int)
 
     # ══════════════════════════════════════════════════════════════════════
-    # STEP 7: Visualization Data Prep
+    # STEP 6: Visualization Data Prep
     # ══════════════════════════════════════════════════════════════════════
-    log_step(logger, 'STEP 7: Preparing Visualization Data')
+    log_step(logger, 'STEP 6: Preparing Visualization Data')
 
     from viz.graph_renderer import build_networkx_graph, graph_to_cytoscape_elements
 
@@ -241,7 +177,7 @@ def run_pipeline(skip_training: bool = False,
         monthly_returns_aligned = monthly_returns
 
     # ══════════════════════════════════════════════════════════════════════
-    # STEP 8: Launch Dashboard
+    # STEP 7: Launch Dashboard
     # ══════════════════════════════════════════════════════════════════════
     data_bundle = {
         'node_features': node_features,
@@ -253,10 +189,6 @@ def run_pipeline(skip_training: bool = False,
         'regime_labels': regime_labels,
         'months': months,
         'cytoscape_elements': cyto_elements,
-        'predictions': predictions,
-        'model': model,
-        'snapshots': snapshots,
-        'event_embs': event_embs,
     }
 
     logger.info('=' * 70)
@@ -265,11 +197,10 @@ def run_pipeline(skip_training: bool = False,
     logger.info(f'  Events: {len(events_df)}')
     logger.info(f'  Node features: {node_features.shape}')
     logger.info(f'  Edge features: {edge_features.shape}')
-    logger.info(f'  Model params: {param_count:,}')
     logger.info('=' * 70)
 
     if launch_dashboard:
-        log_step(logger, 'STEP 8: Launching Dashboard')
+        log_step(logger, 'STEP 7: Launching Dashboard')
         from viz.dashboard import run_dashboard
         run_dashboard(data_bundle)
 
@@ -280,10 +211,6 @@ def main():
     parser = argparse.ArgumentParser(
         description='Sector War Graph — Middle East War Impact on Sectors'
     )
-    parser.add_argument('--train', action='store_true',
-                       help='Run GNN training (otherwise skip)')
-    parser.add_argument('--epochs', type=int, default=50,
-                       help='Number of training epochs (default: 50)')
     parser.add_argument('--no-dashboard', action='store_true',
                        help='Skip dashboard launch')
     parser.add_argument('--no-cache', action='store_true',
@@ -292,9 +219,7 @@ def main():
     args = parser.parse_args()
 
     run_pipeline(
-        skip_training=not args.train,
         use_cache=not args.no_cache,
-        epochs=args.epochs,
         launch_dashboard=not args.no_dashboard,
     )
 
